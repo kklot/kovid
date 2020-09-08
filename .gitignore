@@ -1,0 +1,13 @@
+.Rproj.user
+.Rhistory
+.RData
+*~
+*.o
+*.so
+*.out
+*.dll
+*.html
+dev/*
+inst/doc
+vignettes_src/
+man/*
