@@ -5,28 +5,18 @@ Authors@R: person("Kinh", "Nguyen", email = "kinh.nguyen@imperial.ac.uk", role =
 Description: What the package does (one paragraph).
 Depends: R (>= 3.1.0),
 Imports: 
-    abind (>= 1.4),
-    binom,
     data.table, 
-    fastmatch (>= 1.1),
-    magrittr,
-    methods,
-    mgcv,
-    mvtnorm,
-    RColorBrewer,
-    reshape2,
-    R6,
-    xml2
+    magrittr
 LinkingTo: 
-    BH
+    BH, 
+    ktools
+Remotes:
+    kklot/ktools
+Suggests:
+    data.table
+
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Suggests: 
-    testthat,
-    knitr,
-    rmarkdown,
-    covr,
-    scoringRules
 VignetteBuilder: knitr
 RoxygenNote: 7.0.2

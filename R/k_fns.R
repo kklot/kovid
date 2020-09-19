@@ -4,13 +4,6 @@ minmax <- function(x, minx, maxx) {
   (x  - minx)  / (maxx-minx)
 }
 
-today <- function(as_date=TRUE) {
-  td = format(Sys.time(), '%Y-%m-%d')
-  if(as_date)
-    return(as.Date(td))
-  td
-}
-
 intervention <- function(mixmat=contacts,
   work=0, school=0, other=0, lockdown=0,
   work_essential=0.1, other_essential=0.1) {
