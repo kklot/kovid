@@ -5,7 +5,7 @@ Authors@R: person("Kinh", "Nguyen", email = "kinh.nguyen@imperial.ac.uk", role =
 Description: What the package does (one paragraph).
 Depends: R (>= 3.1.0),
 Imports: 
-    data.table, 
+    data.table,
     magrittr
 LinkingTo: 
     BH, 
@@ -14,9 +14,8 @@ Remotes:
     kklot/ktools
 Suggests:
     data.table
-
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
 VignetteBuilder: knitr
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1
