@@ -40,10 +40,10 @@ gen_C <- function(
   date_school   = c('2020-03-01', '2020-04-01'),
   date_lockdown = c('2020-04-01', '2020-12-01'),
   mixmat        = contacts,
-  essential     = c(.1, .5, .1),
+  essential     = c(work = 0.01, other=0.01), # maximum control level
+  smoothing     = c(set  = 0.5, lift=0.5),
   impulse_days  = NULL,
-  agr           = 5:11,
-  time_to_full  = 7
+  agr           = 5:11
 ) {
 
   date_start    %<>% as.Date
@@ -64,18 +64,20 @@ gen_C <- function(
   school_time   = prog_id(date_school, date_start, epi_time)
   lockdown_time = prog_id(date_lockdown, date_start, epi_time)
 
-  # school has immediate effect
-  ess_work <- as.numeric(!work_time)
-  ess_work[ess_work==0] <- essential[1]
-  ess_lock <- as.numeric(!lockdown_time)
-  ess_lock[ess_lock==0] <- essential[2]
-  time_need <- time_to_full - 1
-  if (time_need > 0) {
-    ess_work[which(work_time)[1:time_to_full]] <- 
-      exp((log(essential[1])/time_need)*0:time_need)
-    ess_lock[which(lockdown_time)[1:time_to_full]] <- 
-      exp((log(essential[2])/time_need)*0:time_need)    
-  }
+  # generate effect of intervention:
+  # - school has immediate effect whereas other and work 
+  # - starts the same time although the effect can be different
+  other_acting = work_acting  = range(which(work_time))
+  ess_work = double_logistic(1:epi_time, 
+    1, essential[1], 
+    smoothing[1], smoothing[2],
+    work_acting[1], work_acting[2])
+  ess_other = double_logistic(1:epi_time, 
+    1, essential[2], 
+    smoothing[1], smoothing[2],
+    work_acting[1], work_acting[2])
+
+  # generate effect of intervention on contact matrix
   dims <- dim(mixmat[[1]])
   M <- mapply(intervention,
     MoreArgs       = list(M=mixmat),
@@ -83,7 +85,7 @@ gen_C <- function(
     school         = school_time, 
     lockdown       = lockdown_time, 
     work_essential = ess_work, 
-    other_essential= ess_lock,
+    other_essential= ess_other,
     SIMPLIFY=FALSE) %>% unlist %>% 
     array(c(dims[1], dims[2], epi_time))
   
