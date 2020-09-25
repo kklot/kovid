@@ -35,7 +35,7 @@ gen_impulse <- function(epitime, days=c('Sat', 'Sun'), agr=5:11) {
 }
 
 gen_C <- function(
-  date_start    = '2020-01-01', date_end,
+  date_start    = '2020-01-01', date_end = today(),
   date_work     = c('2020-03-01', '2020-04-01'),
   date_school   = c('2020-03-01', '2020-04-01'),
   date_lockdown = c('2020-04-01', '2020-12-01'),
@@ -47,8 +47,6 @@ gen_C <- function(
 ) {
 
   date_start    %<>% as.Date
-  if (missing(date_end)) 
-    date_end <- format(Sys.time(), '%Y-%m-%d')
   date_end      %<>% as.Date
   date_work     %<>% as.Date
   date_school   %<>% as.Date
