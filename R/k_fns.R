@@ -4,19 +4,19 @@ minmax <- function(x, minx, maxx) {
   (x  - minx)  / (maxx-minx)
 }
 
-intervention <- function(mixmat=contacts,
-  work=0, school=0, other=0, lockdown=0,
+intervention <- function(M=mixmat,
+  work=FALSE, school=FALSE, other=FALSE, lockdown=FALSE,
   work_essential=0.1, other_essential=0.1) {
-  work_m <- school_m <- others_m <- diag(16)
+  n_agr <- nrow(M[['home']])
   if (lockdown)
-    work <- school <- other <- 1
+    work <- school <- other <- TRUE
   if (work)
-    work_m <- work_essential * mixmat[['work']]
+    M[['work']] <- work_essential * M[['work']]
   if (school)
-    school_m <- 0 * mixmat[['school']]
+    M[['school']] <- 0 * M[['school']]
   if (other)
-    other <- other_essential * mixmat[['other']]
-  mixmat[['home']] + work_m + school_m + others_m
+    M[['others']] <- other_essential * M[['others']] # note the s
+  Reduce('+', M)
 }
 
 prog_id <- function(x, x0, xend)
@@ -78,6 +78,7 @@ gen_C <- function(
   }
   dims <- dim(mixmat[[1]])
   M <- mapply(intervention,
+    MoreArgs       = list(M=mixmat),
     work           = work_time, 
     school         = school_time, 
     lockdown       = lockdown_time, 
@@ -85,6 +86,7 @@ gen_C <- function(
     other_essential= ess_lock,
     SIMPLIFY=FALSE) %>% unlist %>% 
     array(c(dims[1], dims[2], epi_time))
+  
   list(M=M, epi_time = epi_time, time= time, 
     impulse_v = impulse$impulse_v,
     impulse_a = impulse$impulse_a,
