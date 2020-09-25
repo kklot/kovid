@@ -21,7 +21,7 @@ intervention <- function(M=mixmat,
 
 prog_id <- function(x, x0, xend)
   x %>% subtract(x0) %>% paste(collapse=":") %>% 
-  parse(text=.) %>% eval %>% is_in(1:xend, .)
+  eval_text %>% is_in(1:xend, .)
 
 # generate import case by day, randomize age-group
 gen_impulse <- function(epitime, days=c('Sat', 'Sun'), agr=5:11) {
