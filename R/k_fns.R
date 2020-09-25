@@ -23,6 +23,7 @@ prog_id <- function(x, x0, xend)
   x %>% subtract(x0) %>% paste(collapse=":") %>% 
   parse(text=.) %>% eval %>% is_in(1:xend, .)
 
+# generate import case by day, randomize age-group
 gen_impulse <- function(epitime, days=c('Sat', 'Sun'), agr=5:11) {
   # 5:11 20-54
   impulse_v <- epitime %>% format('%a') %>% is_in(days)
@@ -54,10 +55,12 @@ gen_C <- function(
   
   epi_time <- date_end - date_start
   time <- date_start:(date_end-1) %>% as.Date(origin="1970-01-01")
+  # import case by date/random age-group
   if (is.null(impulse_days)) 
     impulse_days <- 'K'
   impulse <- gen_impulse(time, impulse_days, agr=agr)
 
+  # Dates when the interventions occur
   work_time     = prog_id(date_work, date_start, epi_time)
   school_time   = prog_id(date_school, date_start, epi_time)
   lockdown_time = prog_id(date_lockdown, date_start, epi_time)
