@@ -1,3 +1,8 @@
+#' R6 class for covid simulation, fitting, and plot
+#' 
+#' R6 class for covid simulation, fitting, and plot, see example
+#' 
+#' @export
 kovid <- R6::R6Class('kovid', portable = FALSE,
   public = list(
     cases=NULL, pop=NULL, actions=NULL, contacts=NULL, group_size=NULL,p_death=NULL,d_scale=NULL,
