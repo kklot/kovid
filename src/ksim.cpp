@@ -21,7 +21,6 @@
 #include "utils.hpp"
 
 struct kinputs {
-  // SEXP         fp_ss;
   const double beta;
   const double durInf;
   const double durLat;
@@ -30,10 +29,10 @@ struct kinputs {
   const double nInfected;
   const double epi_time;
   const double * rho;
-  const double * ess;
   const double * p_death;
   const int    * impulse_v;
   boost2D_ptr  POP;
+  boost2D_ptr  eff;
   boost3D_ptr  M;
   boost2D_ptr impulse_a;
   // 
@@ -50,11 +49,11 @@ struct kinputs {
     durTrt     (*REAL(get_value(inputs, "durTrt"))),
     nInfected  (*REAL(get_value(inputs, "nInfected"))),
     epi_time   (*REAL(get_value(inputs, "epi_time"))),
+    rho        ( REAL(get_value(inputs, "rho"))),
     p_death    ( REAL(get_value(inputs, "p_death"))),
     impulse_v  ( INTEGER(get_value(inputs, "impulse_v"))),
-    rho        ( REAL(get_value(inputs, "rho"))),
-    ess        ( REAL(get_value(inputs, "ess"))),
     POP        ( REAL(get_value(inputs, "POP")), get_dim_2D(inputs, "POP")),
+    eff        ( REAL(get_value(inputs, "eff")), get_dim_2D(inputs, "eff")),
     M          ( REAL(get_value(inputs, "M")), get_dim_3D(inputs, "M")),
     impulse_a  ( REAL(get_value(inputs, "impulse_a")), get_dim_2D(inputs, "impulse_a"))
   {}
@@ -71,7 +70,7 @@ extern "C" SEXP ksimc(SEXP inputs) {
 
   boost1D N_age = ip.POP[ indices[1][_all] ];
   boost1D p_age = ip.POP[ indices[2][_all] ];
-  double N = sum_vector(N_age);
+  // double N = sum_vector(N_age);
 
   const int S = 0, E = 1, Is = 2, Ic = 3, R = 4, D = 5, Q=6, T=7, 
     lambda=8, N_agegr = 16, N_state = 9;
@@ -83,23 +82,25 @@ extern "C" SEXP ksimc(SEXP inputs) {
     o[0][i][Ic] = ip.nInfected;
     o[0][i][S]  = N_age[i] - (o[0][i][E] + o[0][i][Ic] + o[0][i][Is] + o[0][i][R]);
   }
-  double SE, EIc, EIs, IcR, IsR, IcT, IcQ, Q2R, T2D;
-  for (int i = 0; i < ip.epi_time-1; ++i) {
+  double SE, EIc, EIs, IsR, IcT, IcQ, Q2R, T2D;
+  for (int i = 0; i < ip.epi_time-1; ++i) { // day
     if (ip.impulse_v[i])
       for (int j = 0; j < N_agegr; ++j)
           o[i][j][E] = ip.impulse_a[i][j];
-    for (int j = 0; j < N_agegr; ++j) {
-      for (int k = 0; k < N_agegr; ++k)
-        o[i][j][lambda] += ip.beta * ip.M[i][k][j] * ((o[i][k][Ic] + o[i][k][Is]) / N_age[k]);
+    for (int j = 0; j < N_agegr; ++j) {     // me
+      for (int k = 0; k < N_agegr; ++k)     // other
+        for (int l = 0; l < 4; ++l)         // home > work > school > other
+          o[i][j][lambda] += 
+            ip.beta * ip.M[l][k][j] * ip.eff[i][l] * ((o[i][k][Ic] + o[i][k][Is]) / N_age[k]);
 
       SE  = o[i][j][lambda]       * o[i][j][S];
-      EIc = alpha *    ip.rho[j]  * o[i][j][E];
-      EIs = alpha * (1-ip.rho[j]) * o[i][j][E];
-      IcQ = gamma * o[i][j][Ic] * (1 - ip.p_death[j]);
-      IcT = gamma * o[i][j][Ic] *      ip.p_death[j];
-      T2D = treat * o[i][j][T];
-      Q2R = quara * o[i][j][Q];
+      EIc = alpha *    ip.rho[j]  * o[i][j][E]; // more old went infectious
+      EIs = alpha * (1-ip.rho[j]) * o[i][j][E]; // more young went asymp
+      IcQ = gamma * o[i][j][Ic] * (1 - ip.p_death[j]); // more young when to Q then recovered
+      IcT = gamma * o[i][j][Ic] *      ip.p_death[j]; // more old went to treat
       IsR = gamma * o[i][j][Is]; // not counted towards statistics
+      T2D = treat * o[i][j][T]; // treat some day then died
+      Q2R = quara * o[i][j][Q]; // spent time in quarantine
       
       o[i+1][j][S]  = o[i][j][S] - SE;
       o[i+1][j][E]  = o[i][j][E] + SE - EIc - EIs;

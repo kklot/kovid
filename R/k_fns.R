@@ -35,20 +35,40 @@ gen_impulse <- function(epitime, days=c('Sat', 'Sun'), agr=5:11) {
   list(impulse_v=impulse_v, impulse_a=impulse_a)
 }
 
+#' Generate intervention
+#' 
+#' Generate intervention
+#' 
+#' @param date_start when epidemic starts
+#' @param date_end when **simulation** ends, default to today
+#' @param date_work start and end date of workplace closure
+#' @param date_school start and end date of school closure
+#' @param date_lockdown start and end date of national lockdown
+#' @param mixmat contact mixing matrix
+#' @param essential vector of length 2, effect of lockdown on workplace and 
+#' other activities matrices, the contact is reduced to contact x essential
+#' @param smoothing vector of length 2, shape of the transition effect of 
+#' lockdown
+#' @param impulse_days simulate imported cases on day of the week, eg. "Sun"
+#' @param agr age-group of the imported cases
+#' @return x
+#' @seealso \code{\link{gen_impulse}} \code{\link{intervention}}
+#' @export
 gen_C <- function(
   date_start    = '2020-01-01', date_end = today(),
   date_work     = c('2020-03-01', '2020-04-01'),
   date_school   = c('2020-03-01', '2020-04-01'),
   date_lockdown = c('2020-04-01', '2020-12-01'),
-  mixmat        = contacts,
   essential     = c(work = 0.01, other=0.01), # maximum control level
   smoothing     = c(set  = 0.5, lift=0.5),
+  post_lockdown = c(work = 0.9, other = 0.9, school = 0.9),
   impulse_days  = NULL,
-  agr           = 5:11
+  agr           = 5:11,
+  group_size    = group_size
 ) {
 
   date_start    %<>% as.Date
-  date_end      %<>% as.Date
+  date_end      %<>% as.Date %>% add(7)
   date_work     %<>% as.Date
   date_school   %<>% as.Date
   date_lockdown %<>% as.Date
@@ -68,30 +88,28 @@ gen_C <- function(
   # generate effect of intervention:
   # - school has immediate effect whereas other and work 
   # - starts the same time although the effect can be different
-  other_acting = work_acting  = range(which(work_time))
-  ess_work = double_logistic(1:epi_time, 
-    1, essential[1], 
+  work_acting  = range(which(work_time))+7
+  eff_work = double_logistic2(1:epi_time, 
+    1, essential[1], post_lockdown[1],
     smoothing[1], smoothing[2],
     work_acting[1], work_acting[2])
-  ess_other = double_logistic(1:epi_time, 
-    1, essential[2], 
+  other_acting = range(which(lockdown_time))+7
+  eff_other = double_logistic2(1:epi_time, 
+    1, essential[2], post_lockdown[2],
     smoothing[1], smoothing[2],
-    work_acting[1], work_acting[2])
-
-  # generate effect of intervention on contact matrix
-  dims <- dim(mixmat[[1]])
-  M <- mapply(intervention,
-    MoreArgs       = list(M=mixmat),
-    work           = work_time, 
-    school         = school_time, 
-    lockdown       = lockdown_time, 
-    work_essential = ess_work, 
-    other_essential= ess_other,
-    SIMPLIFY=FALSE) %>% unlist %>% 
-    array(c(dims[1], dims[2], epi_time))
-  
-  list(M=M, epi_time = epi_time, time= time, 
+    other_acting[1], other_acting[2])
+  school_acting = range(which(school_time))+7
+  eff_school = double_logistic2(1:epi_time, 
+    1, 0, post_lockdown[3],
+    10, 10,
+    school_acting[1], school_acting[2])
+  eff <- rbind(rep(1, epi_time), eff_work, eff_school,  eff_other)
+  # eff <- sweep(eff, 1, unlist(group_size[c('household_size', 'work_size', 'school_size', 'city_size')]), '*')
+  list(
+    epi_time = epi_time, time= time,
+    eff      = eff,
     impulse_v = impulse$impulse_v,
     impulse_a = impulse$impulse_a,
-    inputs=as.list(match.call()))
+    inputs=as.list(match.call())
+  )
 }
